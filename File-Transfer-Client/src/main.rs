@@ -1,10 +1,12 @@
 mod FileSystem;
+mod CommandHandler;
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
 use std::ptr::null;
 use std::str::FromStr;
 use std::{fs, io, thread};
 use std::fs::{File, ReadDir};
+use std::io::Write;
 use std::ops::Deref;
 use std::path::Component::CurDir;
 use std::path::Path;
@@ -14,26 +16,25 @@ fn main() {
     println!("Booting up...");
 
     println!("Checking for upload/download folders...");
-    let downloadFolder: &str = "./Downloads/";
-    let uploadFolder: &str = "./Uploads/";
+    let downloadFolder: &Path = Path::new("./Downloads");
+    let uploadFolder: &Path = Path::new("./Uploads");
     FileSystem::make_dir_if_none_exist("./Downloads");
     FileSystem::make_dir_if_none_exist("./Uploads");
+
     println!("Trying connect to server...");
 
     let mut has_server_connection:bool = false;
+    let mut stream:TcpStream;
     loop{
-        let mut stream = match TcpStream::connect_timeout(&SocketAddr::new(IpAddr::from(Ipv4Addr::from_str("127.0.0.1").unwrap()), 2345), Duration::new(1, 0)){
-            Ok(n)=>{
-                has_server_connection = true;
+         stream= match TcpStream::connect_timeout(&SocketAddr::new(IpAddr::from(Ipv4Addr::from_str("127.0.0.1").unwrap()), 2345), Duration::new(2, 0)){
+            Ok(n)=>n,
+            Err(e)=>{
+                println!("Failed to connect!");
+                println!("Retrying...");
+                continue;
             },
-            Err(e)=>(),
         };
-
-        if  has_server_connection {
             break;
-        }
-        println!("Failed to connect!");
-        println!("Retrying...");
     }
     print!("\x1B[2J\x1B[1;1H");
     println!("Connected to server!\n");
@@ -44,7 +45,7 @@ fn main() {
         println!("Enter your command:");
 
         let mut input = String::new();
-        let commandSize = io::stdin().read_line(&mut input).unwrap();
+        let command_size = io::stdin().read_line(&mut input).unwrap();
 
         input = String::from(input.trim_end_matches("\n").trim().to_lowercase());
 
@@ -56,20 +57,19 @@ fn main() {
         }
 
         if input == "ls" || input == "list" {
-            println!("\nFiles in upload folder:");
-            let mut dirList = fs::read_dir(uploadFolder).unwrap();
-
-            if dirList.by_ref().count() == 0{
-                println!("Uploads folder is empty put something u wanna upload in it!")
-            }
-
-            for entry in dirList.by_ref(){
-                println!("Bla");
-                println!("- {:?}", entry.unwrap().file_name().into_string().unwrap())
-            }
-            print!("\n");
+            CommandHandler::list_command(uploadFolder);
 
         }
+
+        if input == "send" {
+            let mut param_buffer = String::new();
+            io::stdin().read_line(&mut param_buffer).unwrap();
+            param_buffer = String::from(param_buffer.trim_end_matches("\n").trim().to_lowercase());
+
+            stream.write(param_buffer.as_bytes());
+        }
+
+
     }
 
 
