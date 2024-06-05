@@ -1,20 +1,20 @@
 mod FileSystem;
 mod CommandHandler;
+mod Shared;
+
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
-use std::ptr::null;
 use std::str::FromStr;
 use std::{fs, io, thread};
-use std::fs::{File, ReadDir};
 use std::io::Write;
 use std::ops::Deref;
-use std::path::Component::CurDir;
 use std::path::Path;
 use std::time::Duration;
 
+
 fn main() {
     println!("Booting up...");
-
+    print!("\x1B[2J\x1B[1;1H");
     println!("Checking for upload/download folders...");
     let downloadFolder: &Path = Path::new("./Downloads");
     let uploadFolder: &Path = Path::new("./Uploads");
@@ -23,7 +23,7 @@ fn main() {
 
     println!("Trying connect to server...");
 
-    let mut has_server_connection:bool = false;
+    Shared::NetworkUtils::fill_buffer_from_stream();
     let mut stream:TcpStream;
     loop{
          stream= match TcpStream::connect_timeout(&SocketAddr::new(IpAddr::from(Ipv4Addr::from_str("127.0.0.1").unwrap()), 2345), Duration::new(2, 0)){
