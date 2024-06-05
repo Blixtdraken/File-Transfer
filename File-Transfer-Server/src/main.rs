@@ -12,11 +12,14 @@ fn main(){
 
     loop {
         let mut stream = server.accept().unwrap().0;
-        let mut thread = thread::spawn(move || {
-            loop {
+        stream.set_nonblocking(true);
+        thread::spawn(move || {
+            println!("Got connection from {} to  {}", stream.peer_addr().unwrap().to_string(), stream.local_addr().unwrap().to_string());
+            'main: loop {
                 let mut stream_buffer = [0u8;256];
                 Shared::NetworkUtils::fill_buffer_from_stream(&mut stream_buffer, &stream);
-                println!("{}", String::from_utf8_lossy(&stream_buffer))
+                println!("{}", String::from_utf8_lossy(&stream_buffer));
+                println!("{}", Shared::NetworkUtils::unbuffer_string(&stream_buffer) == "send")
             }
         });
         
